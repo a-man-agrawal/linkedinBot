@@ -1,144 +1,58 @@
-email: amanag10000@gmail.com
-password: Ammu@2504.linked
+credentials:
+  email: "***"
+  password: "***"
 
-disableAntiLock: False
+settings:
+  disableAntiLock: False
+  remote: False
+  outputFileDirectory: "output"
+  easyApply: False
 
-remote: False
+jobPreferences:
+  jobTypes:
+    full-time: True
+    contract: False
+    part-time: False
+    temporary: False
+    internship: False
+    other: False
+    volunteer: False
 
-jobTypes:
- full-time: True
- contract: False
- part-time: False
- temporary: False
- internship: False
- other: False
- volunteer: False
+  datePosted:
+    all_time: False
+    month: False
+    week: True
+    last_24_hours: False
 
-date:
- all time: False
- month: False
- week: True
- 24 hours: False
+  positions:
+    - "KYC AML"
+  
+  poeple_profiles:
+    - "Hiring"
+    - "Senior"
+    - "Analyst"
 
-positions:
- - Data Scientist
- - Machine leaning Engineer
- - Gen AI developer
- #- First position
- #- A second position
- #- A third position
- #- ...
+  employeeCount:
+    less_than_500: True
+    less_than_1000: False
 
-outputFileDirectory: D:\EasyApplyBot-master\output\
-
-uploads:
- resume: D:\Aman_Agrawal_Resume.pdf
-
-employee count:
- - less 500 : True
- - less 1000: False
-
-# ------------ QA section -------------------
-
-# ------------ Additional parameters: checkboxes ---------------
-checkboxes:
- # Do you have a valid driver's license? (yes/no checkbox)
- driversLicence: True
- # Will you now, or in the future, require sponsorship for employment visa status (e.g. H-1B visa status)? (yes/no checkbox)
- # This is relative to the location and your citizenship applying above, and same with legallyAuthorized.
- requireVisa: False
- # Are you legally authorized to work in COUNTRY? (yes/no checkbox)
- legallyAuthorized: True
- # We must fill this position urgently. Can you start immediately? (yes/no checkbox)
- urgentFill: True
- # Are you comfortable commuting to this job's location? (yes/no checkbox)
- commute: False
- # Are you comfortable working in a remote environment? (yes/no checkbox)
- remote: True
- # Are you comfortable taking a drug in accordance with local/state laws? (yes/no checkbox)
- drugTest: True
- # Are you willing to complete an assessment? (yes/no checkbox)
- assessment: True
- # Have you completed the following level of education: DEGREE TYPE? (yes/no checkbox)
- degreeCompleted:
-  - High School Diploma
-  - Bachelor's Degree
-  # - Associate's Degree
-  # - Master of Business Administration
-  # - Doctor of Philosophy
-  # - Doctor of Medicine
-  # - Doctor of Law
- # Are you willing to undergo a background check, in accordance with local law/regulations?
- backgroundCheck: True
-
-# ------------ Additional parameters: universityGpa ---------------
-universityGpa: 8.3
-
-# ------------ Additional parameters: salaryMinimum ---------------
-salaryMinimum: 106000
-
-# ------------ Additional parameters: languages ---------------
-languages:
- english: Native or bilingual # None, Conversational, Professional, Native or bilingual
-
-# ------------ Additional parameters: years of experience ---------------
-# How many years of work experience do you have ...? (whole numbers only)
-experience:
- # normal ones
- Accounting/Auditing: 0
- Administrative : 0
- Advertising : 0
- Analyst : 0
- Art/Creative: 0
- Business Development: 0
- Consulting: 0
- Customer Service: 0
- Distribution Design: 0
- Education: 0
- Engineering: 0
- Finance: 0
- General Business: 0
- Health Care Provider: 0
- Human Resources: 0
- Information Technology: 0
- Legal: 0
- Management: 0
- Manufacturing: 0
- Marketing: 0
- Public Relations: 0
- Purchasing: 0
- Product Management: 0
- Project Management: 0
- Production: 0
- Quality Assurance: 0
- Research: 0
- Sales: 0
- Science: 0
- Strategy/Planning: 0
- Supply Chain: 0
- Training: 0
- Writing/Editing: 0
- #python: 0
- #selenium: 0
- # default to put for any industry/skill that you did not list
- default: 4
-
-# ------------ Additional parameters: personal info ---------------
-personalInfo:
- First Name: Aman
- Last Name: Agrawal
- Phone Country Code: India (+91) # See linkedin for your country code, must be exact according to the international platform, i.e. Italy (+39) not Italia (+39)
- Mobile Phone Number: 7697450887
- Street address: Bhopal
- City: Bhopal # Include the state/province as well!
- State: MAdhya Pradesh
- Zip: 462030
- 
-# ------------ Additional parameters: USA employment crap ---------------
-eeo:
- gender: Male
- race: Asian
- vetran: None
- disability: None
- citizenship: yes
- clearance: no
+  blacklistedTitles:
+    - "Intern"
+    - "Senior Manager"
+    - "Manager"
+    - "Credit"
+    - "Walk-IN"
+    - "Walk In"
+    - "Assistant Manager"
+    - "Audit"
+    - "Compliance"
+    - "Fraud"
+    - "Crime"
+    - "Revenue"
+    - "Night"
+    - "Investment"
+    - "drive"
+    - " TAx"
+    - "APAC"
+    - "Payroll"
+    - "real estate"
