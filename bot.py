@@ -497,10 +497,10 @@ class LinkedInBot:
             all_profiles+=selected_profiles
         return list(all_profiles),connection_failed
 
-    def populate_connections(self, file_path,max_per_profile = 2,contiue_after_limit = False):
+    def populate_connections(self,contiue_after_limit = False):
         print("Gathering and connecting people!")
         # Read the jobs data
-        df_jobs = pd.read_csv(file_path)
+        df_jobs = pd.read_csv(self.file_path)
         
         # Check if 'connections' column exists, if not, create it
         if 'connections' not in df_jobs.columns:
@@ -515,14 +515,14 @@ class LinkedInBot:
         for company_link in tqdm(unique_company_links, desc="Processing Companies"):
             try:
                 if company_link:  # Ensure the company link is not empty
-                    connections,is_failed = self.get_connect_people(company_link,max_per_profile)
+                    connections,is_failed = self.get_connect_people(company_link)
                     connections_dict[company_link] = connections
                     
                     # Update the DataFrame for the current company link
                     df_jobs.loc[df_jobs['company_link'] == company_link, 'connections'] = str(connections)
                     
                     # Save the updated DataFrame back to the file after each company is processed
-                    df_jobs.to_csv(file_path, index=False)
+                    df_jobs.to_csv(self.file_path, index=False)
                     print(f"Updated file saved after processing company: {company_link}")
 
                     if not contiue_after_limit and is_failed:
@@ -536,4 +536,5 @@ if __file__ == "__main___":
     bot = LinkedInBot(headless=False)
     bot.login()
     bot.start_applying()
-    bot.populate_connections("output\jobs.csv")
+    bot.populate_connections()
+    bot.close()
