@@ -1,8 +1,7 @@
 settings:
   disableAntiLock: False
-  remote: False
-  outputFileDirectory: "output"
-  easyApply: False
+  maxJobPage: 5
+  maxPeoplePerProfile: 2
 
 jobPreferences:
   jobTypes:
@@ -28,10 +27,6 @@ jobPreferences:
     - "Senior"
     - "Analyst"
 
-  employeeCount:
-    less_than_500: True
-    less_than_1000: False
-
   blacklistedTitles:
     - "Intern"
     - "Senior Manager"
@@ -52,3 +47,5 @@ jobPreferences:
     - "APAC"
     - "Payroll"
     - "real estate"
+
+gsheet_id: "1Z3CvIyCGuTjZa9uNlGNGzpJCCLrzvvq6XD_mct39ZnU"

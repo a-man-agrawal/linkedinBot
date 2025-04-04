@@ -2,8 +2,8 @@ import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
 import os
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import yaml
+
 
 def upload_csv_to_gsheet(csv_file, sheet_name, gsheet_url):
     # Authenticate with Google Sheets
@@ -35,7 +35,9 @@ def upload_csv_to_gsheet(csv_file, sheet_name, gsheet_url):
 def main():
     csv_file = "linkedinBot\output\jobs.csv"
     sheet_name = f"Jobs_{pd.Timestamp.now().strftime('%Y-%m-%d')}"
-    gsheet_url = "https://docs.google.com/spreadsheets/d/1Z3CvIyCGuTjZa9uNlGNGzpJCCLrzvvq6XD_mct39ZnU"
+    with open('linkedinBot\configs\config.yaml') as f:
+        config = yaml.safe_load(f)
+    gsheet_url = f"https://docs.google.com/spreadsheets/d/{config['gsheet_id']}"
 
     upload_csv_to_gsheet(csv_file, sheet_name, gsheet_url)
 

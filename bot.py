@@ -51,14 +51,12 @@ class LinkedInBot:
             "email": os.environ.get("LINKEDIN_EMAIL"),
             "password": os.environ.get("LINKEDIN_PASSWORD"),
             "disableAntiLock": config.get("settings", {}).get("disableAntiLock", False),
-            "remote": config.get("settings", {}).get("remote", False),
-            "easyApply": config.get("settings", {}).get("easyApply", False),
-            "outputFileDirectory": config.get("settings", {}).get("outputFileDirectory", ""),
+            "maxJobPage": config.get("settings", {}).get("maxJobPage", 5),
+            "maxPeoplePerProfile": config.get("settings", {}).get("maxPeoplePerProfile", 2),
             "jobTypes": config.get("jobPreferences", {}).get("jobTypes", {}),
             "datePosted": config.get("jobPreferences", {}).get("datePosted", {}),
             "positions": config.get("jobPreferences", {}).get("positions", []),
             "people_profiles": config.get("jobPreferences", {}).get("people_profiles", []),
-            "employeeCount": config.get("jobPreferences", {}).get("employeeCount", {}),
             "blacklistedtitles": config.get("jobPreferences", {}).get("blacklistedTitles", []),
             "blacklistedEmployeeCounts": config.get("jobPreferences", {}).get("blacklistedEmployeeCounts", []),
         }
@@ -124,8 +122,7 @@ class LinkedInBot:
                 date_url = dates[key]
                 break
         
-        easy_apply_url = "&f_AL=true" if self.config.get("easyApply", False) else ""
-        extra_search_terms = [job_types_url, easy_apply_url, date_url]
+        extra_search_terms = [job_types_url, date_url]
         extra_search_terms_str = '&'.join(term for term in extra_search_terms if term)
         
         return extra_search_terms_str
@@ -184,7 +181,7 @@ class LinkedInBot:
         except Exception as e:
             print(f"An error occurred during scrolling: {e}")
 
-    def start_applying(self,max_job_page = 5):
+    def start_applying(self):
         for position in self.config["positions"]:
             try:
                 print(f"Starting the search for {position}")
@@ -208,7 +205,7 @@ class LinkedInBot:
                 
                 total_applied = 0
 
-                for page in range(0, min(job_count // 25 + 1, max_job_page)):  # Limit to 5 pages to avoid excessive requests
+                for page in range(0, min(job_count // 25 + 1, self.config["maxJobPage"])):  # Limit to 5 pages to avoid excessive requests
                     print(f"Processing page {page + 1} for position '{position}'")
                     self.job_page(position, page)
                     time.sleep(random.uniform(3, 5))
@@ -227,9 +224,8 @@ class LinkedInBot:
 
                 #saving the data to a CSV file
                 if not self.df_jobs.empty:
-                    output_file = f"{self.config['outputFileDirectory']}/jobs.csv"
-                    self.df_jobs.to_csv(output_file, index=False)
-                    print(f"Job details saved to {output_file}")
+                    self.df_jobs.to_csv(self.file_path , index=False)
+                    print(f"Job details saved to {self.file_path}")
 
             except Exception as e:
                 print(f"Error while processing position '{position}': {e}")
@@ -424,7 +420,7 @@ class LinkedInBot:
             print(f"An error occurred while processing job details: {e}")
             return None
     
-    def get_connect_people(self, company_link, connect=True,max_per_profile = 2):
+    def get_connect_people(self, company_link, connect=True):
         company_id = company_link.split("/company/")[1].split("/")[0]
         self.driver.get(f"https://www.linkedin.com/company/{company_id}/people")
         time.sleep(random.uniform(3, 5))
@@ -436,7 +432,7 @@ class LinkedInBot:
 
         for search in people_searches:
             selected_profiles, not_connected_profiles = set(), []
-            if len(selected_profiles) >= max_per_profile or connection_failed:
+            if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
                 break
             try:
                 try:
@@ -460,7 +456,7 @@ class LinkedInBot:
                 self.scroll_down_page(30)
                 profiles = self.driver.find_elements(By.CSS_SELECTOR, "div.scaffold-finite-scroll__content ul li")
                 for profile in profiles:
-                    if len(selected_profiles) >= max_per_profile or connection_failed:
+                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
                         break
                     try:
                         profile_link = profile.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
@@ -477,7 +473,7 @@ class LinkedInBot:
 
             if connect:
                 for profile_link, connect_button in not_connected_profiles:
-                    if len(selected_profiles) >= max_per_profile or connection_failed:
+                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
                         break
                     try:
                         connect_button.click()
@@ -494,7 +490,7 @@ class LinkedInBot:
 
             else:
                 for profile_link, _ in not_connected_profiles:
-                    if len(selected_profiles) >= max_per_profile:
+                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2):
                         break
                     selected_profiles.add(profile_link)
             
