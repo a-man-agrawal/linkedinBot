@@ -44,26 +44,22 @@ This project is a LinkedIn automation bot designed to streamline job application
 
 Start the bot:
 ```bash
-python src/main.py
+python bot.py
 ```
 
 The bot will:
 - Log in to LinkedIn.
 - Search for jobs based on your preferences.
 - Evaluate job matches using AI.
-- Apply for suitable jobs.
 - Save job details to `output/jobs.csv`.
 
 Optionally, populate connections:
-```bash
-python src/networking.py
-```
 
 ### Uploading Data to Google Sheets
 
 Run the following command to upload job details to Google Sheets:
 ```bash
-python src/upload_to_sheets.py
+python utils/gsheet.py
 ```
 
 ## Configuration
