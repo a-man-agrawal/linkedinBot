@@ -1,0 +1,54 @@
+settings:
+  disableAntiLock: False
+  remote: False
+  outputFileDirectory: "output"
+  easyApply: False
+
+jobPreferences:
+  jobTypes:
+    full-time: True
+    contract: False
+    part-time: False
+    temporary: False
+    internship: False
+    other: False
+    volunteer: False
+
+  datePosted:
+    all_time: False
+    month: False
+    week: True
+    last_24_hours: False
+
+  positions:
+    - "KYC AML"
+  
+  people_profiles:
+    - "Hiring"
+    - "Senior"
+    - "Analyst"
+
+  employeeCount:
+    less_than_500: True
+    less_than_1000: False
+
+  blacklistedTitles:
+    - "Intern"
+    - "Senior Manager"
+    - "Manager"
+    - "Credit"
+    - "Walk-IN"
+    - "Walk In"
+    - "Assistant Manager"
+    - "Audit"
+    - "Compliance"
+    - "Fraud"
+    - "Crime"
+    - "Revenue"
+    - "Night"
+    - "Investment"
+    - "drive"
+    - " TAx"
+    - "APAC"
+    - "Payroll"
+    - "real estate"

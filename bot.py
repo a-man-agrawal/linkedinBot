@@ -1,3 +1,9 @@
+import os
+import sys
+current_file_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_file_path)
+
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -14,35 +20,36 @@ from webdriver_manager.chrome import ChromeDriverManager
 import pyautogui
 import pandas as pd
 from tqdm import tqdm
+from linkedinBot.utils.ai import JobMatchEvaluator
 import os
 
 class LinkedInBot:
-    def __init__(self, config_path="config.yaml", headless = False,driver_path="D:\\chromedriver.exe"):
-        self.config_path = config_path
+    def __init__(self, headless = False,resume_path = None):
         self.headless = headless
-        self.driver_path = driver_path
         self.config = self.load_config()
         self.driver = self.init_browser()
-        self.file_path = r"output\jobs.csv"
+        self.job_match_evaluator  = JobMatchEvaluator(resume_path=resume_path) 
+        self.file_path = r"linkedinBot\output\jobs.csv"
         if os.path.exists(self.file_path):
             self.df_jobs = pd.read_csv(self.file_path)
+            print(f"Loaded {self.df_jobs.shape[0]} jobs from file.")
         else:
-            self.df_jobs = pd.DataFrame(columns=["job_title", "job_description", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link"])
+            self.df_jobs = pd.DataFrame(columns=["job_title", "job_description", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link","job_skills","cover_letter"])
 
         self.applied_jobs = [(row['job_title'], row['company_name']) for _, row in self.df_jobs.iterrows()] if self.df_jobs.shape[0] else []
     
     def load_config(self):
         """Load bot configurations from a YAML file."""
         try:
-            with open(self.config_path, "r") as file:
+            with open("linkedinBot\configs\config.yaml", "r") as file:
                 config = yaml.safe_load(file)
         except FileNotFoundError:
             print("Config file not found! Using default settings.")
             return {}
 
         return {
-            "email": config.get("credentials", {}).get("email", ""),
-            "password": config.get("credentials", {}).get("password", ""),
+            "email": os.environ.get("LINKEDIN_EMAIL"),
+            "password": os.environ.get("LINKEDIN_PASSWORD"),
             "disableAntiLock": config.get("settings", {}).get("disableAntiLock", False),
             "remote": config.get("settings", {}).get("remote", False),
             "easyApply": config.get("settings", {}).get("easyApply", False),
@@ -50,7 +57,7 @@ class LinkedInBot:
             "jobTypes": config.get("jobPreferences", {}).get("jobTypes", {}),
             "datePosted": config.get("jobPreferences", {}).get("datePosted", {}),
             "positions": config.get("jobPreferences", {}).get("positions", []),
-            "people_profiles": config.get("jobPreferences", {}).get("poeple_profiles", []),
+            "people_profiles": config.get("jobPreferences", {}).get("people_profiles", []),
             "employeeCount": config.get("jobPreferences", {}).get("employeeCount", {}),
             "blacklistedtitles": config.get("jobPreferences", {}).get("blacklistedTitles", []),
             "blacklistedEmployeeCounts": config.get("jobPreferences", {}).get("blacklistedEmployeeCounts", []),
@@ -67,7 +74,7 @@ class LinkedInBot:
         for option in optionss:
             browser_options.add_argument(option)
         
-        service = Service(ChromeDriverManager().install())  # Auto-downloads the correct driver
+        service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=browser_options)
         driver.set_window_position(0, 0)
         driver.maximize_window()
@@ -135,6 +142,12 @@ class LinkedInBot:
             pyautogui.press('esc')
         except ImportError:
             print("pyautogui module is not installed. Skipping avoid_lock functionality.")
+    
+    def scroll_down_page(self, percentage=20):
+        scroll_height = self.driver.execute_script("return document.body.scrollHeight")  # Get total height
+        scroll_by = scroll_height * (percentage / 100)  # Calculate pixels to scroll
+        self.driver.execute_script(f"window.scrollBy(0, {scroll_by});")  # Scroll down
+        time.sleep(random.uniform(1, 2))
 
     def job_page(self, position,job_page):
         self.driver.get("https://www.linkedin.com/jobs/search/?" + self.get_base_search_url(self.config) +
@@ -327,6 +340,16 @@ class LinkedInBot:
                 job_description = None
                 print("Job description not found.")
 
+            # job ai evaluation
+            try:
+                if self.job_match_evaluator:
+                    is_matching,skills,cover_letter = self.job_match_evaluator.check_job_match(job_description)
+                    if is_matching == "No":
+                        print("Job description does not match resume.")
+                        return None
+            except:
+                skills,cover_letter = None,None
+
             # Extract job location
             try:
                 job_location = self.driver.find_element(By.CSS_SELECTOR, 
@@ -360,18 +383,25 @@ class LinkedInBot:
 
             # Save the job if applicable
             if save:
+                # check if it is linkedin easy apply
                 try:
-                    save_button = self.driver.find_element(By.CSS_SELECTOR, ".jobs-save-button")
-                    if "Save" in save_button.text.split():
-                        save_button.click()
-                        try:
-                            time.sleep(random.uniform(0.5, 1.5))
-                            close_button = self.driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Dismiss')]")
-                            close_button.click()
-                        except Exception:
-                            print("Close button not found after saving the job.")
+                    easy_apply_button = self.driver.find_elements("xpath", "//button[@id='jobs-apply-button-id' and .//span[text()='Easy Apply']]")
                 except Exception:
-                    print("Save button not found.")
+                    easy_apply_button = None
+                
+                if len(easy_apply_button) > 0:
+                    try:
+                        save_button = self.driver.find_element(By.CSS_SELECTOR, ".jobs-save-button")
+                        if "Save" in save_button.text.split():
+                            save_button.click()
+                            try:
+                                time.sleep(random.uniform(0.5, 1.5))
+                                close_button = self.driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Dismiss')]")
+                                close_button.click()
+                            except Exception:
+                                print("Close button not found after saving the job.")
+                    except Exception:
+                        print("Save button not found.")
 
             applied_job = (job_title, company_name)
             self.applied_jobs.append(applied_job)
@@ -385,7 +415,9 @@ class LinkedInBot:
                 "company_link": company_link,
                 "job_link": job_link,
                 "employee_count": employee_count,
-                "hirer_link": hirer_link
+                "hirer_link": hirer_link,
+                "job_skills":skills,
+                "cover_letter":cover_letter
             }
 
         except Exception as e:
@@ -404,19 +436,28 @@ class LinkedInBot:
 
         for search in people_searches:
             selected_profiles, not_connected_profiles = set(), []
-            if len(selected_profiles) >= 3 or connection_failed:
+            if len(selected_profiles) >= max_per_profile or connection_failed:
                 break
             try:
                 try:
-                    clear_all_button = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Clear all']")))
-                    clear_all_button.click()
-                    time.sleep(random.uniform(1, 2))
+                    self.driver.execute_script("window.scrollTo(0, 0);")
+                    self.scroll_down_page(10)
+                    clear_btn = WebDriverWait(self.driver, 3).until(
+                        EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Clear all']"))
+                    )
+                    clear_btn.click()
+                    WebDriverWait(self.driver, 3).until_not(
+                        EC.presence_of_element_located((By.XPATH, "//button[normalize-space()='Clear all']"))
+                    )
+                    time.sleep(random.uniform(2, 4))
+                    
                 except:
                     pass
-                search_box = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, "people-search-keywords")))
-                search_box.send_keys(search, Keys.RETURN)
-                time.sleep(random.uniform(3, 5))
 
+                search_box = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, "people-search-keywords")))
+                search_box.send_keys(search, Keys.RETURN)
+                time.sleep(random.uniform(2, 4))
+                self.scroll_down_page(30)
                 profiles = self.driver.find_elements(By.CSS_SELECTOR, "div.scaffold-finite-scroll__content ul li")
                 for profile in profiles:
                     if len(selected_profiles) >= max_per_profile or connection_failed:
@@ -447,7 +488,7 @@ class LinkedInBot:
                         time.sleep(2)
                         selected_profiles.add(profile_link)
                     except Exception as e:
-                        print(f"Connection failed for {profile_link}: {e}")
+                        print(f"Connection failed for {profile_link} : {str(e)[:100]}")
                         if "invitation limit" in str(e).lower() or "restricted" in str(e).lower():
                             connection_failed = True 
 
@@ -470,7 +511,7 @@ class LinkedInBot:
             df_jobs['connections'] = None
         
         # Get unique company links where connections are empty
-        unique_company_links = df_jobs[df_jobs['connections'].isnull()]['company_link'].drop_duplicates()
+        unique_company_links = df_jobs[df_jobs['connections'].isnull() | (df_jobs['connections'] == '[]')]['company_link'].drop_duplicates().tolist()
         
         # Create a dictionary to store connections for unique companies
         connections_dict = {}
@@ -494,8 +535,9 @@ class LinkedInBot:
             except Exception as e:
                 print(f"Error processing company link {company_link}: {e}")
 
+
 if __file__ == "__main___":
-    bot = LinkedInBot(config_path="config.yaml", headless=False, driver_path="chromedriver.exe")
+    bot = LinkedInBot(headless=False)
     bot.login()
     bot.start_applying()
     bot.populate_connections("output\jobs.csv")
