@@ -36,8 +36,6 @@ jobPreferences:
     - "Walk In"
     - "Assistant Manager"
     - "Audit"
-    - "Compliance"
-    - "Fraud"
     - "Crime"
     - "Revenue"
     - "Night"
@@ -47,5 +45,13 @@ jobPreferences:
     - "APAC"
     - "Payroll"
     - "real estate"
+    - "Loans"
+  
+  blacklistedDescription:
+    - "Walk in"
+    - "Night Shift"
+    - "Rotational Shift"
+    - "contract role"
+
 
 gsheet_id: "1Z3CvIyCGuTjZa9uNlGNGzpJCCLrzvvq6XD_mct39ZnU"

@@ -3,7 +3,6 @@ import sys
 current_file_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_file_path)
 
-
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -59,6 +58,7 @@ class LinkedInBot:
             "people_profiles": config.get("jobPreferences", {}).get("people_profiles", []),
             "blacklistedtitles": config.get("jobPreferences", {}).get("blacklistedTitles", []),
             "blacklistedEmployeeCounts": config.get("jobPreferences", {}).get("blacklistedEmployeeCounts", []),
+            "blacklistedDescription": config.get("jobPreferences", {}).get("blacklistedDescription", [])
         }
 
     def init_browser(self):
@@ -224,7 +224,7 @@ class LinkedInBot:
 
                 #saving the data to a CSV file
                 if not self.df_jobs.empty:
-                    self.df_jobs.to_csv(self.file_path , index=False)
+                    self.df_jobs.to_csv(os.path.join(os.path.dirname(__file__), self.file_path), index=False)
                     print(f"Job details saved to {self.file_path}")
 
             except Exception as e:
@@ -233,6 +233,11 @@ class LinkedInBot:
     def head_check(self, text):
         text = text.lower()
         exclusions = self.config.get("blacklistedtitles", [])
+        return not any(keyword.lower() in text for keyword in exclusions)
+
+    def jd_check(self, text):
+        text = text.lower()
+        exclusions = self.config.get("blacklistedDescription", [])
         return not any(keyword.lower() in text for keyword in exclusions)
 
     def emp_check(self, text):
@@ -332,9 +337,14 @@ class LinkedInBot:
             # Extract job description
             try:
                 job_description = self.driver.find_element(By.ID, 'job-details').text
+                if not self.jd_check(job_description):
+                    print(f"Job description '{job_description}' is not acceptable.")
+                    return None
             except Exception:
                 job_description = None
                 print("Job description not found.")
+
+            
 
             # job ai evaluation
             try:
