@@ -33,7 +33,7 @@ class LinkedInBot:
             self.df_jobs = pd.read_csv(self.file_path)
             print(f"Loaded {self.df_jobs.shape[0]} jobs from file.")
         else:
-            self.df_jobs = pd.DataFrame(columns=["job_title", "job_description", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link","job_skills","cover_letter"])
+            self.df_jobs = pd.DataFrame(columns=["job_title", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link","job_skills","cover_letter"])
 
         self.applied_jobs = [(row['job_title'], row['company_name']) for _, row in self.df_jobs.iterrows()] if self.df_jobs.shape[0] else []
     
@@ -415,7 +415,6 @@ class LinkedInBot:
             # Return job details
             return {
                 "job_title": job_title,
-                "job_description": job_description,
                 "job_location": job_location,
                 "company_name":company_name,
                 "company_link": company_link,
