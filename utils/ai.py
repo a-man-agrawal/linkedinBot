@@ -65,20 +65,31 @@ class JobMatchEvaluator:
         If YES, also provide:  
 
         **Missing or Recommended Skills (up to 5):**  
-        - Skill 1  
-        - Skill 2  
-        - Skill 3  
-        - Skill 4  
-        - Skill 5  
+        - List **5 key skills or responsibilities** that are **not in the resume** but are **frequently mentioned or strongly implied** in the job description.
+        - Keep each skill **short (2–4 words)** like “Cloud Infrastructure” or “API Design”.
+        - Do not include duplicate or overly broad terms like "Software Engineering".
+        - Make sure they are **not already present in the resume**.
+        - These skills should be **relevant and not entirely misaligned** — they should make the candidate stronger without being unrealistic.
 
-        ### **Cover Letter Guidelines:**
-        - Write a **concise and compelling 5-line cover letter**.
-        - Express enthusiasm for the role.
-        - Highlight **1-2 key strengths** relevant to the job.
-        - Mention **matching skills or experience**.
-        - End with a **request for further discussion**.
 
-        ###     If the match is **NO**, do not generate missing skills or a cover letter. Only return "NO".
+        ### **Referral Message:**
+            Generate a short 4–5 line message for requesting a referral. Use the following structure and tone:
+
+            Hi (Name),
+            Thanks for connecting with me.
+            I'm interested in applying for the (job_title) role at (company_name) and saw you’re currently working there.  
+            I believe strengthening my background in areas like (skill_1), (skill_2), and (skill_3) would align well with the role.  
+            Would it be possible for you to refer me or point me to the right person?  
+            Job link/ID: (job_id)
+
+            Thanks in advance — really appreciate your time! 
+
+            - Mention the job title and company naturally
+            - Include 3 recommended/missing skills from the earlier list
+            - Keep the tone friendly, concise, and low-pressure
+            - Job link/ID:  Use job link attached with description if the actual job ID is not found                         
+
+        ###     If the match is **NO**, do not generate missing skills or a referral messsage. Only return "NO".
 
         ### **Example Response Format:**
         YES  
@@ -88,9 +99,13 @@ class JobMatchEvaluator:
         - CI/CD Pipelines  
         - Microservices Architecture  
 
-        **Cover Letter:**  
-        Dear Hiring Manager,  
-        I am excited to apply for the [Job Title] at [Company Name]. With my expertise in [Key Skill], I am confident in my ability to contribute to your team. My experience in [Another Relevant Skill] aligns well with your needs. I am eager to bring my expertise to [Company Name] and would welcome the opportunity to discuss further. Looking forward to your response.
+        Referral Message:  
+        Hi John,
+        Thanks for connecting with me.  
+        I'm interested in applying for the Senior Backend Engineer role at Acme Corp and saw you’re currently working there.  
+        I believe strengthening my background in areas like Python Automation, CI/CD Pipelines, and Microservices Architecture would align well with the role.  
+        Would it be possible for you to refer me or point me to the right person?  
+        Job link/ID: 12345678
         """
 
         prompt = (
@@ -103,21 +118,22 @@ class JobMatchEvaluator:
 
         if not response:
             return "No", [], "" 
-
+        
         lines = response.split('\n')
-        # Extract match status (first Yes/No occurrence)
+
+        # Extract match status
         match_status_line = next((line for line in lines if "Match Status:" in line), "Match Status: NO")
         match_status = "YES" if "YES" in match_status_line else "NO"
         if match_status == "NO":
-            return "No", [], "" 
-        
-        # Extract missing skills
+            return "No", [], ""
+
+        # Extract missing skills (up to 5)
         skill_lines = [line.strip() for line in lines if re.match(r'^\s*[-*]\s+', line)]
         missing_skills = [re.sub(r'^\s*[-*]\s+', '', skill) for skill in skill_lines if skill]
 
-        # Extract cover letter (everything after "Cover Letter:")
-        cover_letter_index = next((i for i, line in enumerate(lines) if "Cover Letter:" in line), None)
-        cover_letter = "\n".join(lines[cover_letter_index + 1:]).strip() if cover_letter_index else ""
+        # Extract referral message
+        referral_index = next((i for i, line in enumerate(lines) if "Referral Message:" in line), None)
+        referral_message = "\n".join(lines[referral_index + 1:]).strip() if referral_index is not None else ""
 
-        return match_status, missing_skills, cover_letter
+        return match_status, missing_skills, referral_message
 

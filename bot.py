@@ -33,7 +33,7 @@ class LinkedInBot:
             self.df_jobs = pd.read_csv(self.file_path)
             print(f"Loaded {self.df_jobs.shape[0]} jobs from file.")
         else:
-            self.df_jobs = pd.DataFrame(columns=["job_title", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link","job_skills","cover_letter"])
+            self.df_jobs = pd.DataFrame(columns=["job_title", "job_location","company_name","company_link", "job_link", "employee_count", "hirer_link","job_skills","referral_message"])
 
         self.applied_jobs = [(row['job_title'], row['company_name']) for _, row in self.df_jobs.iterrows()] if self.df_jobs.shape[0] else []
     
@@ -224,7 +224,7 @@ class LinkedInBot:
 
                 #saving the data to a CSV file
                 if not self.df_jobs.empty:
-                    self.df_jobs.to_csv(os.path.join(os.path.dirname(__file__), self.file_path), index=False)
+                    self.df_jobs.to_csv(self.file_path, index=False)
                     print(f"Job details saved to {self.file_path}")
 
             except Exception as e:
@@ -333,28 +333,34 @@ class LinkedInBot:
             except Exception:
                 employee_count = None
                 print("Employee count not found.")
-
+            
+            # Extract job link
+            try:
+                job_element = self.driver.find_element(By.CLASS_NAME, "job-details-jobs-unified-top-card__job-title")
+                job_link = job_element.find_element(By.TAG_NAME, "a").get_attribute("href")
+            except Exception:
+                job_link = None
+                print("Job link not found.")
+            
             # Extract job description
             try:
                 job_description = self.driver.find_element(By.ID, 'job-details').text
                 if not self.jd_check(job_description):
-                    print(f"Job description '{job_description}' is not acceptable.")
+                    print(f"Job description is not acceptable.")
                     return None
             except Exception:
                 job_description = None
                 print("Job description not found.")
 
-            
-
             # job ai evaluation
             try:
                 if self.job_match_evaluator:
-                    is_matching,skills,cover_letter = self.job_match_evaluator.check_job_match(job_description)
+                    is_matching,skills,referral_message = self.job_match_evaluator.check_job_match(job_description + f"jOB_LINK:{job_link}")
                     if is_matching == "No":
                         print("Job description does not match resume.")
                         return None
             except:
-                skills,cover_letter = None,None
+                skills,referral_message = None,None
 
             # Extract job location
             try:
@@ -379,13 +385,7 @@ class LinkedInBot:
                 company_link = None
                 print("Company link not found.")
 
-            # Extract job link
-            try:
-                job_element = self.driver.find_element(By.CLASS_NAME, "job-details-jobs-unified-top-card__job-title")
-                job_link = job_element.find_element(By.TAG_NAME, "a").get_attribute("href")
-            except Exception:
-                job_link = None
-                print("Job link not found.")
+
 
             # Save the job if applicable
             if save:
@@ -422,7 +422,7 @@ class LinkedInBot:
                 "employee_count": employee_count,
                 "hirer_link": hirer_link,
                 "job_skills":skills,
-                "cover_letter":cover_letter
+                "referral_message":referral_message
             }
 
         except Exception as e:
@@ -437,13 +437,13 @@ class LinkedInBot:
         people_searches = self.config.get('people_profiles',['Hiring'])
         connection_failed = False
         all_profiles = []
-        selected_profiles = []
-
         for search in people_searches:
-            selected_profiles, not_connected_profiles = set(), []
-            if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
-                break
             try:
+                people_count = 0
+                if people_count >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
+                    break
+                
+                # clear previous search if any
                 try:
                     self.driver.execute_script("window.scrollTo(0, 0);")
                     self.scroll_down_page(10)
@@ -455,56 +455,74 @@ class LinkedInBot:
                         EC.presence_of_element_located((By.XPATH, "//button[normalize-space()='Clear all']"))
                     )
                     time.sleep(random.uniform(2, 4))
-                    
                 except:
                     pass
-
+                    
+                # enter in search
                 search_box = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, "people-search-keywords")))
                 search_box.send_keys(search, Keys.RETURN)
                 time.sleep(random.uniform(2, 4))
                 self.scroll_down_page(30)
                 profiles = self.driver.find_elements(By.CSS_SELECTOR, "div.scaffold-finite-scroll__content ul li")
+
+                # saving and making connecteions
+                connected_first = []
+                not_connected = []
                 for profile in profiles:
-                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
+                    if people_count >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
                         break
+                    # fetching profile details
                     try:
-                        profile_link = profile.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
+                        profile_link  = profile.find_element(By.TAG_NAME, "a").get_attribute("href")
+                        profile_name = profile.find_element(By.XPATH, ".//div[contains(@class, 'lt-line-clamp--single-line')]").text.strip()
+                    except:
+                        continue
+
+                    try:
+                        # Check if connected (Message button present)
                         profile.find_element(By.XPATH, ".//button[span[text()='Message']]")
-                        selected_profiles.add(profile_link)
+                        connected_first.append({
+                            "profile_link": profile_link,
+                            "profile_name": profile_name,
+                            "status": "connected"
+                        })
+                        people_count += 1
+                    except:
+                        # Save for second pass if not already connected
+                        not_connected.append((profile, profile_link, profile_name))
+
+                for profile, profile_link, profile_name in not_connected:
+                    if people_count >= self.config.get('maxPeoplePerProfile', 2) or connection_failed:
+                        break
+
+                    try:
+                        if connect:
+                            profile.find_element(By.XPATH, ".//button[span[text()='Connect']]").click()
+                            time.sleep(random.uniform(1, 2))
+                            WebDriverWait(self.driver, 3).until(EC.element_to_be_clickable(
+                                (By.XPATH, "//button[span[text()='Send without a note']]"))).click()
+                            time.sleep(2)
+                            connected_first.append({
+                                "profile_link": profile_link,
+                                "profile_name": profile_name,
+                                "status": "pending"
+                            })
+                        else:
+                            connected_first.append({
+                                "profile_link": profile_link,
+                                "profile_name": profile_name,
+                                "status": "not connected"
+                            })
+                        people_count += 1
                     except Exception as e:
-                        try:
-                            connect_button = profile.find_element(By.XPATH, ".//button[span[text()='Connect']]")
-                            not_connected_profiles.append((profile_link, connect_button))
-                        except Exception as e:
-                            pass
+                        if "invitation limit" in str(e).lower() or "restricted" in str(e).lower():
+                            connection_failed = True
+
+                all_profiles.extend(connected_first)
             except Exception as e:
                 print(f"Error while searching for '{search}': {e}")
-
-            if connect:
-                for profile_link, connect_button in not_connected_profiles:
-                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2) or connection_failed:
-                        break
-                    try:
-                        connect_button.click()
-                        time.sleep(random.uniform(1, 2))
-                        WebDriverWait(self.driver, 3).until(
-                            EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Send without a note']]"))
-                        ).click()
-                        time.sleep(2)
-                        selected_profiles.add(profile_link)
-                    except Exception as e:
-                        print(f"Connection failed for {profile_link} : {str(e)[:100]}")
-                        if "invitation limit" in str(e).lower() or "restricted" in str(e).lower():
-                            connection_failed = True 
-
-            else:
-                for profile_link, _ in not_connected_profiles:
-                    if len(selected_profiles) >= self.config.get('maxPeoplePerProfile',2):
-                        break
-                    selected_profiles.add(profile_link)
             
-            all_profiles+=selected_profiles
-        return list(all_profiles),connection_failed
+        return all_profiles,connection_failed
 
     def populate_connections(self,contiue_after_limit = False):
         print("Gathering and connecting people!")
@@ -539,7 +557,6 @@ class LinkedInBot:
                         break
             except Exception as e:
                 print(f"Error processing company link {company_link}: {e}")
-
 
 if __file__ == "__main___":
     bot = LinkedInBot(headless=False)
