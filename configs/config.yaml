@@ -1,6 +1,6 @@
 settings:
   disableAntiLock: False
-  maxJobPage: 5
+  maxJobPage: 7
   maxPeoplePerProfile: 2
 
 jobPreferences:
@@ -17,6 +17,7 @@ jobPreferences:
     all_time: False
     month: False
     week: True
+    3_days: False
     last_24_hours: False
 
   positions:
@@ -26,6 +27,13 @@ jobPreferences:
     - "Hiring"
     - "Senior"
     - "Analyst"
+  
+  blacklistedEmployeeCounts:
+    - "1-10 "
+    - "2-"
+    - "11-"
+    - "51-"
+    - "101-"
 
   blacklistedTitles:
     - "Intern"
@@ -52,6 +60,10 @@ jobPreferences:
     - "Night Shift"
     - "Rotational Shift"
     - "contract role"
+
+  blacklistedcompany:
+    - "aml rightsource"
+  
 
 
 gsheet_id: "1Z3CvIyCGuTjZa9uNlGNGzpJCCLrzvvq6XD_mct39ZnU"

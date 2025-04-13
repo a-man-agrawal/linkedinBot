@@ -45,67 +45,85 @@ class JobMatchEvaluator:
 
     def check_job_match(self, job_description):
 
-        system_prompt = """You are an AI evaluating a candidate’s fit for a technical job based on their resume and the job description.
+        system_prompt = f"""You are an AI evaluating a candidate’s fit for a technical job based on their resume and the job description.
 
         ### **Decision Criteria:**
         Recommend **YES** if:
-        - The candidate meets **at least 65%** of the core requirements.
+        -- The candidate meets **at least 65 percent of the core requirements** listed in the job description.
         - The experience gap is **3 years or less**.
-        - The candidate has **relevant transferable skills**.
+        - The candidate has **relevant transferable skills or industry exposure**.
 
         Recommend **NO** if:
-        - The experience gap is **greater than 3 years**.
-        - The candidate is **missing multiple core requirements**.
-        - The role is **significantly more senior**.
-        - The job requires **specific niche skills or technologies** that the candidate lacks.
+        - The experience gap is **more than 3 years**.
+        - The candidate is **missing multiple core requirements or responsibilities**.
+        - The role is **significantly more senior** than the candidate’s past experience.
+        - The job requires **niche skills or technologies** that the candidate does not mention.
+
 
         ### **Response Format:**
         **Match Status:** YES / NO
 
-        If YES, also provide:  
-
-        **Missing or Recommended Skills (up to 5):**  
-        - List **5 key skills or responsibilities** that are **not in the resume** but are **frequently mentioned or strongly implied** in the job description.
-        - Keep each skill **short (2–4 words)** like “Cloud Infrastructure” or “API Design”.
-        - Do not include duplicate or overly broad terms like "Software Engineering".
-        - Make sure they are **not already present in the resume**.
-        - These skills should be **relevant and not entirely misaligned** — they should make the candidate stronger without being unrealistic.
-
+        #### If **YES**, also return: 
+        **Missing or Recommended Skills (Top 7):**  
+        - List **7 key skills, tools, or responsibilities** that are:
+        - **Not present in the resume**, or  
+        - **Present in an alternate form** but should be **reworded to match the job description terminology** (e.g., use “Regulatory Compliance” instead of “Compliance” or “AML Investigations” instead of “Case Review”).
+        - Include **at least 3 technical skills or tools** related to the job (e.g., “Actimize”, “SQL Reporting”, “Power BI”, “Tableau”).
+        - The remaining **4 can include soft skills, responsibilities, or industry-specific keywords** (e.g., “Risk Assessment”, “Client Due Diligence”, “Transaction Monitoring”).
+        - Each item should be **short and specific (2–4 words)**.
+        - Avoid redundant or overly broad terms like “Finance” or “Analysis”.
+        - Ensure all items are **relevant, realistic, and aligned** with the candidate’s background.
 
         ### **Referral Message:**
-            Generate a short 4–5 line message for requesting a referral. Use the following structure and tone:
+        Generate a clear, professional, and friendly referral request using the format below:
 
-            Hi (Name),
-            Thanks for connecting with me.
-            I'm interested in applying for the (job_title) role at (company_name) and saw you’re currently working there.  
-            I believe strengthening my background in areas like (skill_1), (skill_2), and (skill_3) would align well with the role.  
-            Would it be possible for you to refer me or point me to the right person?  
-            Job link/ID: (job_id)
+        Hi (Name),  
+        Thanks for connecting!  
 
-            Thanks in advance — really appreciate your time! 
+        I’m interested in the **(job_title)** role at **(company_name)** and noticed you’re currently working there.  
+        I’d really appreciate it if you could refer me for the position.  
 
-            - Mention the job title and company naturally
-            - Include 3 recommended/missing skills from the earlier list
-            - Keep the tone friendly, concise, and low-pressure
-            - Job link/ID:  Use job link attached with description if the actual job ID is not found                         
+        **Job link:** (job_id or job link if ID not available)  
 
-        ###     If the match is **NO**, do not generate missing skills or a referral messsage. Only return "NO".
+        For context, I’m currently an Associate at SBI with over 4 years of experience in banking operations, client onboarding, KYC/AML compliance, and regulatory risk reviews — including due diligence and transaction monitoring.  
+
+        Thanks so much for your support!  
+        **Name** :(Extract from resume)
+        ""Email**: (Extract from resume)
+
+        **Referral Message Notes:**
+        - Mention the **job title** and **company name** naturally.
+        - Message should be **polite and confident**, without sounding too casual or vague.
+        - The **About section** should align with common phrasing used in job descriptions.
+        - Use the **job link** if a specific **Job ID** is unavailable.
+        - End with the candidate’s **name and email**, extracted from the resume or environment variable.
+                       
+        ###If the match is **NO**, do not generate missing skills or a referral messsage. Only return "NO".
 
         ### **Example Response Format:**
         YES  
-        - Cloud Computing  
-        - Python Automation  
-        - Database Optimization  
-        - CI/CD Pipelines  
-        - Microservices Architecture  
+        - SQL Reporting  
+        - Regulatory Compliance  
+        - Transaction Monitoring  
+        - Data Visualization Tools  
+        - Client Due Diligence  
+        - Risk Assessment  
+        - Actimize
 
         Referral Message:  
-        Hi John,
-        Thanks for connecting with me.  
-        I'm interested in applying for the Senior Backend Engineer role at Acme Corp and saw you’re currently working there.  
-        I believe strengthening my background in areas like Python Automation, CI/CD Pipelines, and Microservices Architecture would align well with the role.  
-        Would it be possible for you to refer me or point me to the right person?  
-        Job link/ID: 12345678
+        Hi Priya,
+        Thanks for connecting!
+
+        I’m interested in the Senior Associate Analyst role at CommBank and noticed you’re currently working there.
+        I’d really appreciate it if you could refer me for the position.
+
+        Job link: https://www.commbank.com.au/careers/job/12345678
+
+        For context, I’m currently an Associate at SBI with over 4 years of experience in banking operations, client onboarding, KYC/AML compliance, and regulatory risk reviews — including due diligence and transaction monitoring.
+
+        Thanks so much for your support!
+        Name: Anuradha Gangnani
+        Email: anuradha.g@example.com
         """
 
         prompt = (

@@ -58,7 +58,8 @@ class LinkedInBot:
             "people_profiles": config.get("jobPreferences", {}).get("people_profiles", []),
             "blacklistedtitles": config.get("jobPreferences", {}).get("blacklistedTitles", []),
             "blacklistedEmployeeCounts": config.get("jobPreferences", {}).get("blacklistedEmployeeCounts", []),
-            "blacklistedDescription": config.get("jobPreferences", {}).get("blacklistedDescription", [])
+            "blacklistedDescription": config.get("jobPreferences", {}).get("blacklistedDescription", []),
+            "blacklistedcompanys": config.get("jobPreferences", {}).get("blacklistedCompanies", []),
         }
 
     def init_browser(self):
@@ -115,7 +116,7 @@ class LinkedInBot:
         job_types_url += "%2C".join([key[0].upper() for key in job_types if job_types[key]])
         
         date_url = ""
-        dates = {"all time": "", "month": "&f_TPR=r2592000", "week": "&f_TPR=r604800", "24 hours": "&f_TPR=r86400"}
+        dates = {"all_time": "", "month": "&f_TPR=r2592000", "week": "&f_TPR=r604800", "last_24_hours": "&f_TPR=r86400" ,"3_days": "&f_TPR=r259200"}
         date_table = parameters.get('datePosted', {})
         for key, value in date_table.items():
             if value:
@@ -216,16 +217,13 @@ class LinkedInBot:
                             total_applied += len(jobs_detals)
                             if jobs_detals:
                                 self.df_jobs = pd.concat([self.df_jobs, pd.DataFrame(jobs_detals)], ignore_index=True)
+                                self.df_jobs.to_csv(self.file_path, index=False)
+                                print(f"Job details saved to {self.file_path}")
                     except Exception as e:
                         print(f"Error applying for jobs on page {page}: {e}")
                         continue
 
                 print(f"Applied for {total_applied} jobs for the position: {position}.")
-
-                #saving the data to a CSV file
-                if not self.df_jobs.empty:
-                    self.df_jobs.to_csv(self.file_path, index=False)
-                    print(f"Job details saved to {self.file_path}")
 
             except Exception as e:
                 print(f"Error while processing position '{position}': {e}")
@@ -244,6 +242,11 @@ class LinkedInBot:
         blacklisted_employee_counts = self.config.get("blacklistedEmployeeCounts", ["1-10 e", "11-", "101-", "51-"])
         return not any(count in text for count in blacklisted_employee_counts)
 
+    def company_check(self,text):
+        text = text.lower()
+        exclusions = self.config.get("blacklistedcompanys", [])
+        return not any(keyword.lower() in text for keyword in exclusions)
+    
     def apply_jobs(self):
         try:
             # Locate the job results header and check for relevant text
@@ -304,6 +307,9 @@ class LinkedInBot:
             
             # check in already applied jobs
             if (job_title,company_name) in self.applied_jobs:
+                return None
+            
+            if not self.company_check(company_name):
                 return None
             
             if not self.head_check(job_title):
